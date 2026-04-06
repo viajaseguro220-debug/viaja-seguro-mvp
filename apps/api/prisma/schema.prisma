@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String   @id @default(uuid())
+  fullName              String   @map("full_name")
+  phone                 String
+  email                 String   @unique
+  passwordHash          String   @map("password_hash")
+  role                  String   @default("passenger")
+  verificationStatus    String   @default("pending") @map("verification_status")
+  emergencyContactName  String?  @map("emergency_contact_name")
+  emergencyContactPhone String?  @map("emergency_contact_phone")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  driverProfile       DriverProfile?
+  passengerProfile    PassengerProfile?
+  routes              Route[]
+  trips               Trip[]
+  reservations        Reservation[]
+  userDocuments       UserDocument[]
+  vehicle             Vehicle?
+  refundsHandled      Refund[]          @relation("RefundAdminUser")
+  weeklyPayouts       WeeklyPayout[]    @relation("WeeklyPayoutDriver")
+  reviewedPayments    Payment[]         @relation("PaymentReviewedByAdmin")
+  createdFarePolicies FarePolicy[]      @relation("FarePolicyCreatedByAdmin")
+  routeOffers         RouteOffer[]
+  incidentsReported   IncidentReport[]  @relation("IncidentReporter")
+  incidentsReviewed   IncidentReport[]  @relation("IncidentReviewer")
+
+  @@map("users")
+}
+
+model DriverProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  status            String   @default("pending")
+  bankAccountNumber String?  @map("bank_account_number")
+  bankClabe         String?  @map("bank_clabe")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("driver_profiles")
+}
+
+model PassengerProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("passenger_profiles")
+}
+
+model FarePolicy {
+  id                   String   @id @default(uuid())
+  mode                 String   @default("max_per_km")
+  ratePerKm            Float    @map("rate_per_km")
+  currency             String   @default("MXN")
+  isActive             Boolean  @default(true) @map("is_active")
+  notes                String?
+  createdByAdminUserId String?  @map("created_by_admin_user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  createdByAdmin User?   @relation("FarePolicyCreatedByAdmin", fields: [createdByAdminUserId], references: [id], onDelete: SetNull)
+  routes         Route[]
+
+  @@index([isActive])
+  @@index([createdByAdminUserId])
+  @@map("fare_policies")
+}
+
+model Route {
+  id                   String   @id @default(uuid())
+  publicId             Int?     @unique @map("public_id")
+  templateKey          String?  @unique @map("template_key")
+  driverUserId         String   @map("driver_user_id")
+  farePolicyId         String?  @map("fare_policy_id")
+  title                String?
+  origin               String
+  destination          String
+  originPlaceId        String?  @map("origin_place_id")
+  destinationPlaceId   String?  @map("destination_place_id")
+  originLat            Float?   @map("origin_lat")
+  originLng            Float?   @map("origin_lng")
+  destinationLat       Float?   @map("destination_lat")
+  destinationLng       Float?   @map("destination_lng")
+  stopsText            String?  @map("stops_text")
+  weekdaysText         String   @map("weekdays")
+  departureTime        String   @map("departure_time")
+  estimatedArrivalTime String   @map("estimated_arrival_time")
+  availableSeats       Int      @map("available_seats")
+  distanceKm           Float    @map("distance_km")
+  pricePerSeat         Float    @map("price_per_seat")
+  farePolicyMode       String?  @map("fare_policy_mode")
+  fareRatePerKmApplied Float?   @map("fare_rate_per_km_applied")
+  maxAllowedPrice      Float?   @map("max_allowed_price")
+  status               String   @default("active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  driver     User         @relation(fields: [driverUserId], references: [id], onDelete: Cascade)
+  farePolicy FarePolicy?  @relation(fields: [farePolicyId], references: [id], onDelete: SetNull)
+  trips      Trip[]
+  offers     RouteOffer[]
+
+  @@index([driverUserId])
+  @@index([farePolicyId])
+  @@index([publicId])
+  @@map("routes")
+}
+
+model Trip {
+  id                           String   @id @default(uuid())
+  publicId                     Int?     @unique @map("public_id")
+  routeId                      String   @map("route_id")
+  routeOfferId                 String?  @map("route_offer_id")
+  driverUserId                 String   @map("driver_user_id")
+  tripDate                     DateTime @map("trip_date")
+  departureTimeSnapshot        String   @map("departure_time_snapshot")
+  estimatedArrivalTimeSnapshot String   @map("estimated_arrival_time_snapshot")
+  availableSeatsSnapshot       Int      @map("available_seats_snapshot")
+  pricePerSeatSnapshot         Float    @map("price_per_seat_snapshot")
+  boardingReference            String?  @map("boarding_reference")
+  status                       String   @default("scheduled")
+  createdAt                    DateTime @default(now()) @map("created_at")
+  updatedAt                    DateTime @updatedAt @map("updated_at")
+
+  route        Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  routeOffer   RouteOffer?   @relation(fields: [routeOfferId], references: [id], onDelete: SetNull)
+  driver       User          @relation(fields: [driverUserId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([routeId])
+  @@index([driverUserId])
+  @@index([tripDate])
+  @@index([routeOfferId])
+  @@index([publicId])
+  @@map("trips")
+}
+
+model Reservation {
+  id              String   @id @default(uuid())
+  publicId        Int?     @unique @map("public_id")
+  tripId          String   @map("trip_id")
+  routeOfferId    String?  @map("route_offer_id")
+  passengerUserId String   @map("passenger_user_id")
+  totalSeats      Int      @map("total_seats")
+  companionCount  Int      @map("companion_count")
+  totalAmount     Float    @map("total_amount")
+  numericCode     String   @unique @map("numeric_code")
+  qrToken         String   @unique @map("qr_token")
+  status          String   @default("confirmed")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  trip       Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  routeOffer RouteOffer? @relation(fields: [routeOfferId], references: [id], onDelete: SetNull)
+  passenger  User        @relation(fields: [passengerUserId], references: [id], onDelete: Cascade)
+  payment    Payment?
+  refunds    Refund[]
+
+  @@index([tripId])
+  @@index([passengerUserId])
+  @@index([routeOfferId])
+  @@index([status])
+  @@index([numericCode])
+  @@index([qrToken])
+  @@index([publicId])
+  @@map("reservations")
+}
+
+model Payment {
+  id                    String    @id @default(uuid())
+  reservationId         String    @unique @map("reservation_id")
+  amount                Float
+  status                String    @default("pending")
+  provider              String    @default("manual_transfer")
+  providerReference     String?   @map("provider_reference")
+  paymentMethodLabel    String?   @map("payment_method_label")
+  paymentInstructions   String?   @map("payment_instructions")
+  proofFileName         String?   @map("proof_file_name")
+  proofFilePath         String?   @map("proof_file_path")
+  reviewedByAdminUserId String?   @map("reviewed_by_admin_user_id")
+  reviewedAt            DateTime? @map("reviewed_at")
+  reviewNotes           String?   @map("review_notes")
+  appCommissionAmount   Float     @map("app_commission_amount")
+  driverNetAmount       Float     @map("driver_net_amount")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  reservation     Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  refund          Refund?
+  reviewedByAdmin User?       @relation("PaymentReviewedByAdmin", fields: [reviewedByAdminUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([reservationId])
+  @@index([reviewedByAdminUserId])
+  @@map("payments")
+}
+
+model Refund {
+  id            String   @id @default(uuid())
+  paymentId     String   @unique @map("payment_id")
+  reservationId String   @map("reservation_id")
+  amount        Float
+  reason        String?
+  status        String   @default("processed")
+  adminUserId   String?  @map("admin_user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  payment     Payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  adminUser   User?       @relation("RefundAdminUser", fields: [adminUserId], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@index([status])
+  @@index([adminUserId])
+  @@map("refunds")
+}
+
+model WeeklyPayout {
+  id                  String   @id @default(uuid())
+  driverUserId        String   @map("driver_user_id")
+  periodStart         DateTime @map("period_start")
+  periodEnd           DateTime @map("period_end")
+  grossAmount         Float    @map("gross_amount")
+  appCommissionAmount Float    @map("app_commission_amount")
+  refundedAmount      Float    @map("refunded_amount")
+  netAmount           Float    @map("net_amount")
+  status              String   @default("pending")
+  notes               String?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  driver User @relation("WeeklyPayoutDriver", fields: [driverUserId], references: [id], onDelete: Cascade)
+
+  @@unique([driverUserId, periodStart, periodEnd])
+  @@index([driverUserId])
+  @@index([periodStart, periodEnd])
+  @@map("weekly_payouts")
+}
+
+model UserDocument {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  userRole       String   @map("user_role")
+  documentType   String   @map("document_type")
+  documentNumber String?  @map("document_number")
+  fileName       String?  @map("file_name")
+  filePath       String?  @map("file_path")
+  notes          String?
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([documentType])
+  @@map("user_documents")
+}
+
+model Vehicle {
+  id              String   @id @default(uuid())
+  driverUserId    String   @unique @map("driver_user_id")
+  plates          String
+  brand           String
+  model           String
+  year            Int
+  color           String?
+  seatCount       Int      @map("seat_count")
+  insurancePolicy String?  @map("insurance_policy")
+  status          String   @default("pending")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  driver    User              @relation(fields: [driverUserId], references: [id], onDelete: Cascade)
+  documents VehicleDocument[]
+
+  @@index([status])
+  @@map("vehicles")
+}
+
+model VehicleDocument {
+  id           String   @id @default(uuid())
+  vehicleId    String   @map("vehicle_id")
+  documentType String   @map("document_type")
+  fileName     String?  @map("file_name")
+  filePath     String?  @map("file_path")
+  notes        String?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([status])
+  @@index([documentType])
+  @@map("vehicle_documents")
+}
+
+model EntityCounter {
+  entity    String   @id
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("entity_counters")
+}
+
+model RouteOffer {
+  id                String   @id @default(uuid())
+  publicId          Int?     @unique @map("public_id")
+  routeId           String   @map("route_id")
+  driverUserId      String   @map("driver_user_id")
+  boardingReference String   @map("boarding_reference")
+  weekdaysText      String   @map("weekdays")
+  serviceType       String   @default("weekly") @map("service_type")
+  pricePerSeat      Float    @map("price_per_seat")
+  availableSeats    Int      @default(4) @map("available_seats")
+  status            String   @default("active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  route        Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  driver       User          @relation(fields: [driverUserId], references: [id], onDelete: Cascade)
+  trips        Trip[]
+  reservations Reservation[]
+
+  @@index([routeId])
+  @@index([driverUserId])
+  @@index([status])
+  @@index([publicId])
+  @@map("route_offers")
+}
+
+model IncidentReport {
+  id             String    @id @default(uuid())
+  reporterUserId String    @map("reporter_user_id")
+  type           String
+  title          String
+  message        String
+  status         String    @default("open")
+  routeId        String?   @map("route_id")
+  routeOfferId   String?   @map("route_offer_id")
+  tripId         String?   @map("trip_id")
+  reservationId  String?   @map("reservation_id")
+  reviewedById   String?   @map("reviewed_by_id")
+  reviewedAt     DateTime? @map("reviewed_at")
+  reviewNotes    String?   @map("review_notes")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  reporter   User  @relation("IncidentReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("IncidentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([reporterUserId])
+  @@index([status])
+  @@index([type])
+  @@index([routeId])
+  @@index([routeOfferId])
+  @@index([tripId])
+  @@index([reservationId])
+  @@index([reviewedById])
+  @@map("incident_reports")
+}

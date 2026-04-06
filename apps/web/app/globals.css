@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --vs-navy-950: #07111f;
+  --vs-navy-900: #0d1b2f;
+  --vs-navy-800: #16324f;
+  --vs-slate-100: #eef4f8;
+  --vs-slate-200: #d8e3ea;
+  --vs-teal-500: #15b8a6;
+  --vs-teal-600: #0f9a8b;
+  --vs-white: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(21, 184, 166, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(13, 27, 47, 0.14), transparent 32%),
+    linear-gradient(180deg, #f7fbfd 0%, #eef4f8 44%, #f8fbfc 100%);
+  color: #0f172a;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+::selection {
+  background: rgba(21, 184, 166, 0.22);
+}
+
+@layer base {
+  h1, h2, h3, h4 {
+    letter-spacing: -0.03em;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply transition duration-200;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply outline-none ring-4 ring-cyan-100 border-cyan-500;
+  }
+}
+
+@layer components {
+  .vs-shell {
+    @apply mx-auto w-full max-w-7xl px-4 py-8 md:px-6 md:py-10;
+  }
+
+  .vs-glass {
+    @apply border border-white/60 bg-white/78 shadow-[0_24px_80px_-40px_rgba(7,17,31,0.38)] backdrop-blur;
+  }
+
+  .vs-card {
+    @apply rounded-[28px] border border-slate-200/80 bg-white p-6 shadow-[0_20px_60px_-38px_rgba(13,27,47,0.3)];
+  }
+
+  .vs-card-soft {
+    @apply rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-5;
+  }
+
+  .vs-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.24em] text-slate-500;
+  }
+
+  .vs-title {
+    @apply text-3xl font-semibold text-slate-950 md:text-4xl;
+  }
+
+  .vs-subtitle {
+    @apply text-sm leading-6 text-slate-600 md:text-base;
+  }
+
+  .vs-button-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60;
+  }
+
+  .vs-button-accent {
+    @apply inline-flex items-center justify-center rounded-full bg-cyan-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-600 disabled:opacity-60;
+  }
+
+  .vs-button-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-60;
+  }
+
+  .vs-chip {
+    @apply inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600;
+  }
+
+  .vs-grid-hero {
+    @apply grid gap-6 lg:grid-cols-[1.1fr_0.9fr];
+  }
+}

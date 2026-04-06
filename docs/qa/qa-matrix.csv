@@ -1,0 +1,53 @@
+ID,Modulo,Area,Escenario,Prioridad,Tipo,Rol,Precondiciones,Pasos,ResultadoEsperado,Automatizar,Notas
+AUTH-001,Auth,Funcional,Login de pasajero con credenciales validas,Alta,Positivo,Passenger,Usuario registrado y activo,"Abrir login; capturar correo y contrasena; enviar formulario",Acceso al dashboard passenger,Si,Smoke basico
+AUTH-002,Auth,Funcional,Login con contrasena invalida,Alta,Negativo,Todos,Usuario existente,"Abrir login; capturar password incorrecto; enviar",Mensaje claro sin sesion,Si,Evitar mensaje tecnico
+AUTH-003,Auth,Seguridad,Acceso con token expirado,Alta,Negativo,Todos,Token expirado,"Consumir ruta protegida",401 o redireccion a login,Si,API y frontend
+AUTH-004,Auth,UI/UX,Sesiones separadas por rol en ventanas distintas,Alta,Edge,Todos,Cuentas por rol disponibles,"Abrir sesiones de passenger driver admin en contextos separados",No se mezclan datos ni rol visible,Si,Usar Playwright browser contexts
+REG-001,Registro,Funcional,Registro pasajero exitoso,Alta,Positivo,Passenger,Correo y telefono nuevos,"Completar formulario; enviar",Cuenta creada y sesion iniciada o redireccion esperada,Si,Base de smoke
+REG-002,Registro,Funcional,Registro conductor exitoso,Alta,Positivo,Driver,Correo y telefono nuevos,"Completar formulario; enviar",Cuenta creada y flujo de conductor disponible,Si,Validar bypass dev si aplica
+REG-003,Registro,Negativo,Registro con email duplicado,Alta,Negativo,Todos,Email ya existente,"Intentar nuevo registro",Bloqueo con mensaje claro,Si,No duplicar usuarios
+VER-001,Verificacion,Funcional,Pasajero sube INE frente y reverso,Alta,Positivo,Passenger,Pasajero autenticado,"Ir a verificacion; subir frente y reverso; enviar",Documentos guardados en pending,Si,Upload local
+VER-002,Verificacion,Permisos,Pasajero sin aprobacion intenta reservar,Alta,Negativo,Passenger,Passenger pending,"Buscar trip; intentar reservar",Bloqueo con CTA a verificacion,Si,Regla critica
+VER-003,Verificacion,Admin,Admin aprueba usuario pendiente,Alta,Positivo,Admin,Usuario con documentos pending,"Abrir admin verifications; revisar detalle; aprobar",Usuario pasa a approved,Si,Impacta operacion
+VER-004,Verificacion,Admin,Admin rechaza usuario pendiente,Media,Positivo,Admin,Usuario con documentos pending,"Abrir admin verifications; rechazar con nota",Usuario pasa a rejected,Si,Validar reenvio
+VEH-001,Vehicle,Funcional,Driver registra vehiculo completo,Alta,Positivo,Driver,Driver approved,"Completar placas marca modelo ano color asientos poliza; guardar",Vehiculo creado en pending,Si,Formulario critico
+VEH-002,Vehicle,Negativo,Falta dato obligatorio de vehiculo,Alta,Negativo,Driver,Driver approved,"Omitir color o poliza; guardar",Bloqueo frontend y backend,Si,Validar ambos lados
+VEH-003,Vehicle,Admin,Admin aprueba vehiculo pendiente,Alta,Positivo,Admin,Vehiculo pending,"Abrir admin vehicles; revisar detalle; aprobar",Vehiculo pasa a approved,Si,Habilita rutas/trips
+ROU-001,Routes,Funcional,Driver approved con vehiculo approved crea ruta,Alta,Positivo,Driver,Driver y vehiculo approved,"Crear ruta con weekdays horas asientos precio",Ruta creada correctamente,Si,Flujo clave conductor
+ROU-002,Routes,Negativo,Driver sin vehiculo approved crea ruta,Alta,Negativo,Driver,Driver sin vehiculo approved,"Intentar crear ruta",Bloqueo con mensaje claro,Si,Regla de negocio
+ROU-003,Routes,Negativo,Payload invalido de ruta,Alta,Negativo,Driver,Driver autorizado,"Enviar weekdays vacio o precio no numerico",Errores legibles de validacion,Si,Contrato frontend/backend
+ROU-004,Routes,Permisos,Driver intenta editar ruta ajena,Alta,Negativo,Driver,Existe ruta de otro driver,"Abrir o enviar PATCH con id ajeno",403 o 404 sin cambios,Si,IDOR
+TRI-001,Trips,Funcional,Driver crea trip valido desde ruta activa,Alta,Positivo,Driver,Ruta activa propia,"Seleccionar ruta y fecha; crear trip",Trip creado scheduled,Si,Flujo principal
+TRI-002,Trips,Negativo,Crear trip con ruta pausada,Alta,Negativo,Driver,Ruta paused,"Intentar crear trip",Bloqueo claro,Si,Regla operativa
+TRI-003,Trips,Edge,Crear trip duplicado misma ruta y fecha,Media,Edge,Driver,Trip previo existe,"Repetir creacion",Sistema evita duplicado,Si,Consistencia
+TRI-004,Trips,Operativo,Driver ve reservas y asientos por trip,Alta,Positivo,Driver,Trip con reservas,"Abrir mis trips",Ve total reservas asientos reservados y disponibles,Si,UX operativa
+RES-001,Reservations,Funcional,Pasajero approved reserva un asiento,Alta,Positivo,Passenger,Trip con disponibilidad,"Buscar trip; reservar 1 asiento",Reserva creada y payment generado,Si,Flujo core
+RES-002,Reservations,Negativo,Sobreventa por asientos insuficientes,Alta,Negativo,Passenger,Trip con pocos asientos,"Intentar reservar mas asientos que disponibles",Bloqueo sin cambiar capacidad,Si,Regla critica
+RES-003,Reservations,Concurrencia,Dos pasajeros reservan ultimo asiento al mismo tiempo,Alta,Edge,Passenger,Trip con 1 asiento libre,"Disparar dos reservas simultaneas",Solo una reserva exitosa,Si,Prueba obligatoria
+RES-004,Reservations,Funcional,Cancelar reserva libera capacidad logica,Alta,Positivo,Passenger,Reserva activa existente,"Cancelar reserva",Disponibilidad vuelve a aumentar,Si,Consistencia
+PAY-001,Payments,Funcional,Payment se genera al crear reserva,Alta,Positivo,System,Reserva creada,"Consultar payment relacionado",Payment pending creado con amount correcto,Si,Base economica
+PAY-002,Payments,Funcional,Pasajero sube comprobante,Alta,Positivo,Passenger,Payment pending,"Abrir ticket o mis pagos; subir archivo valido",Payment pasa a submitted,Si,Flujo manual
+PAY-003,Payments,Admin,Admin aprueba pago manual,Alta,Positivo,Admin,Payment submitted,"Abrir admin payments; aprobar",Payment approved y reservation paid,Si,Flujo critico
+PAY-004,Payments,Admin,Admin rechaza comprobante,Alta,Positivo,Admin,Payment submitted,"Abrir admin payments; rechazar",Payment rejected sin habilitar ticket,Si,Flujo critico
+PAY-005,Payments,Negativo,Intentar abordar con payment pending o submitted,Alta,Negativo,Driver,Trip started y reserva sin pago approved,"Ingresar codigo en boarding",Bloqueo con mensaje claro,Si,Regla critica
+PAY-006,Payments,UI/UX,Ticket sin pago approved no muestra QR ni codigo,Alta,Positivo,Passenger,Payment pending/submitted/rejected,"Abrir ticket",Mensaje de espera y sin codigo/QR,Si,Regla operativa
+PAY-007,Payments,UI/UX,Ticket con pago approved muestra codigo y QR,Alta,Positivo,Passenger,Payment approved,"Abrir ticket",Codigo visible maximo 6 digitos y QR disponible,Si,Regla operativa
+PAY-008,Payments,Negativo,Archivo de comprobante no permitido,Media,Negativo,Passenger,Payment pending,"Subir archivo invalido o vacio",Rechazo claro sin guardar archivo,Si,Seguridad upload
+ADM-001,Admin,Funcional,Admin ve pagos pendientes por revisar,Alta,Positivo,Admin,Pagos en submitted,"Abrir panel admin payments",Listado visible con datos de reserva y pasajero,Si,Operacion diaria
+ADM-002,Admin,Funcional,Admin crea ruta asignada a conductor,Media,Positivo,Admin,Conductor approved disponible,"Abrir admin routes; seleccionar conductor; crear ruta",Ruta queda visible para el conductor,Si,Feature admin
+ADM-003,Admin,Operativo,Admin ve trips y reservations para inspeccion,Media,Positivo,Admin,Datos cargados,"Abrir admin trips y reservations",Estados y detalle visibles,Si,Observabilidad
+REF-001,Refunds,Funcional,Admin crea refund manual sobre payment approved,Alta,Positivo,Admin,Payment approved sin refund,"Crear refund manual",Payment refunded y reservation refunded,Si,Base financiera
+REF-002,Refunds,Negativo,Refund duplicado del mismo payment,Alta,Negativo,Admin,Refund previo existe,"Intentar nuevo refund",Bloqueo sin duplicar montos,Si,Consistencia
+PYO-001,WeeklyPayouts,Funcional,Generar payout semanal por conductor,Media,Positivo,Admin,Payments approved en periodo,"Generar payout",Gross comision refund net correctos,Si,Finanzas
+PYO-002,WeeklyPayouts,Edge,Payout con refunds en el mismo periodo,Media,Edge,Admin,Refunds en periodo,"Generar payout",Refunded amount descontado del neto,Si,Consistencia financiera
+SEC-001,Seguridad,Permisos,Passenger intenta acceder a ruta admin,Alta,Negativo,Passenger,Sesion pasajero,"Abrir dashboard admin",Bloqueo o redireccion,Si,IDOR basico
+SEC-002,Seguridad,Permisos,Driver intenta operar recurso ajeno por ID,Alta,Negativo,Driver,Existe recurso ajeno,"Consumir endpoint con id de otro",403 o 404,Si,Ownership
+SEC-003,Seguridad,Input,Intento XSS en campos visibles,Alta,Negativo,Todos,Campos editables visibles,"Guardar script como texto",No se ejecuta JS al renderizar,Si,Frontend y backend
+SEC-004,Seguridad,Input,Intento injection en login o filtros,Media,Negativo,Todos,Formulario disponible,"Enviar payload malicioso tipo OR 1=1",No acceso ni error interno,Si,API
+PERF-001,Performance,Estres,100 reservas concurrentes sobre mismo trip,Alta,Edge,System,Trip con cupo limitado,"Ejecutar carga concurrente",Sin sobreventa ni caida,No,k6 o Artillery
+PERF-002,Performance,Estres,50 usuarios consultan dashboard admin y trip search,Media,Edge,System,Datos cargados,"Ejecutar carga de lectura",Respuestas aceptables sin timeouts masivos,No,Staging
+WEB-001,Integraciones,Webhook,Webhook duplicado de Mercado Pago,Alta,Edge,System,Payment con provider mercadopago,"Enviar mismo webhook dos veces",No duplica transiciones ni refunds,Si,API integration
+WEB-002,Integraciones,Webhook,Webhook fuera de orden,Alta,Edge,System,Payment con varios eventos,"Enviar approved y luego pending",Estado final consistente y defensivo,Si,API integration
+DB-001,Base de datos,Integridad,No existen reservations huerfanas,Alta,Positivo,System,DB con datos de prueba,"Auditar relaciones",Todas las FK logicas consistentes,No,Query de auditoria
+DB-002,Base de datos,Integridad,No existen payments sin reservation valida,Alta,Positivo,System,DB con datos de prueba,"Auditar relaciones",Consistencia total,No,Query de auditoria
+OPS-001,Operacion,Recovery,npm run dev levanta api y web,Alta,Positivo,System,Dependencias instaladas y puertos libres,"Ejecutar npm run dev",API en :4000 y web en :3000,Si,Smoke de entorno

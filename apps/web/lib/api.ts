@@ -1,4 +1,4 @@
-﻿export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://viaja-seguro-mvp.onrender.com/api';
 export const API_ORIGIN = API_URL.replace(/\/api\/?$/, '');
 
 const SESSION_TOKEN_KEY = 'vs_token';
@@ -69,7 +69,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
       headers
     });
   } catch {
-    throw new Error('No se pudo conectar con el servidor. Verifica que API (puerto 4000) y Web (puerto 3000) esten activos.');
+    throw new Error('No se pudo conectar con el servidor API. Verifica NEXT_PUBLIC_API_URL y CORS_ORIGIN.');
   }
 
   const text = await response.text();
